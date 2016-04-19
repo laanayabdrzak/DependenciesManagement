@@ -48,10 +48,15 @@ android {
             debuggable true
         }
     }
-
+    /** this one for separates resource folder
+     *  per screen, In case if your screens consist
+     *  of big amount of layouts, drawables, etc ..
+     **/
     sourceSets {
         main {
-            res.srcDirs += ['src/main/res-main', 'src/main/res-screen']
+            res.srcDirs += ['src/main/res-main',
+                           'src/main/res-screen'
+            ]
         }
     }
 

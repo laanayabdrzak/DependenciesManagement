@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'me.tatarka.retrolambda'
 
 android {
     compileSdkVersion rootProject.ext.androidCompileSdkVersion
@@ -11,11 +12,54 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
+    signingConfigs {
+        // You must set up an environment var before release signing
+        // Run: export APP_KEY={password}
+        // TODO Add your release keystore in /keystore folder
+        release {
+            storeFile file('keystore/release.keystore')
+            keyAlias 'alias'
+            storePassword "$System.env.APP_KEY"
+            keyPassword "$System.env.APP_KEY"
+        }
+        // It's not necessary to specify, but I like to keep the debug keystore
+        // in SC so all our debug builds (on all workstations) use the same
+        // key for convenience
+        debug {
+            storeFile file('keystore/debug.keystore')
+            keyAlias 'androiddebugkey'
+            storePassword 'android'
+            keyPassword 'android'
+        }
+    }
+
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
+        debug {
+            /* This one happens automatically*/
+            //signingConfig signingConfigs.debug
+
+            versionNameSuffix " Debug"
+            debuggable true
+        }
+    }
+
+    sourceSets {
+        main {
+            res.srcDirs += ['src/main/res-main',
+                            'src/main/res-screen'
+            ]
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
