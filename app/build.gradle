@@ -1,36 +1,33 @@
 apply plugin: 'com.android.application'
 apply plugin: 'me.tatarka.retrolambda'
 
+def globalConf = rootProject.ext
+
 android {
-    compileSdkVersion rootProject.ext.androidCompileSdkVersion
-    buildToolsVersion rootProject.ext.androidBuildToolsVersion
+    compileSdkVersion globalConf.androidTargetSdkVersion
+    buildToolsVersion globalConf.androidBuildToolsVersion
 
     defaultConfig {
-        applicationId "abderrazak.com.dependenciesmanagement"
-        minSdkVersion rootProject.ext.androidMinSdkVersion
-        targetSdkVersion rootProject.ext.androidTargetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        applicationId globalConf.androidApplicationIdProduction
+        minSdkVersion globalConf.androidMinSdkVersion
+        targetSdkVersion globalConf.androidTargetSdkVersion
+        versionCode VersionCodeReader.getVersionCode()
+        versionName globalConf.versionName
+        multiDexEnabled true
+    }
+
+    dexOptions {
+        javaMaxHeapSize "4g"
     }
 
     signingConfigs {
-        // You must set up an environment var before release signing
-        // Run: export APP_KEY={password}
-        // TODO Add your release keystore in /keystore folder
-        release {
-            storeFile file('keystore/release.keystore')
-            keyAlias 'alias'
-            storePassword "$System.env.APP_KEY"
-            keyPassword "$System.env.APP_KEY"
-        }
-        // It's not necessary to specify, but I like to keep the debug keystore
-        // in SC so all our debug builds (on all workstations) use the same
-        // key for convenience
         debug {
-            storeFile file('keystore/debug.keystore')
-            keyAlias 'androiddebugkey'
-            storePassword 'android'
-            keyPassword 'android'
+        }
+        release {
+            storeFile file(globalConf.keystore)
+            storePassword globalConf.keystorePass
+            keyAlias globalConf.alias
+            keyPassword globalConf.aliasPass
         }
     }
 
@@ -43,7 +40,8 @@ android {
         debug {
             /* This one happens automatically*/
             //signingConfig signingConfigs.debug
-
+            applicationIdSuffix '.debug'
+            minifyEnabled false
             versionNameSuffix " Debug"
             debuggable true
         }
@@ -60,6 +58,28 @@ android {
         }
     }
 
+    applicationVariants.all { variant ->
+
+        def filename = "${globalConf.applicationName}-${variant.baseName}-${globalConf.versionName}.apk"
+
+        variant.outputs.each { output ->
+            output.outputFile = new File(
+                    output.outputFile.parent,
+                    filename)
+        }
+    }
+
+    packagingOptions {
+        exclude 'LICENSE.txt'
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/ASL2.0'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/services/javax.annotation.processing.Processor'
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -67,10 +87,18 @@ android {
 }
 
 dependencies {
-    Map<String, String> dependencies = rootProject.ext.dependencies;
+    Map<String, String> dependencies = globalConf.dependencies;
 
     compile fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
     testCompile  dependencies.jUnit
     compile dependencies.appCompat
 
+}
+class VersionCodeReader {
+    static def getVersionCode() {
+        def defaultVersion = 1
+        def code = System.env.BUILD_NUMBER != null ? Integer.parseInt(System.env.BUILD_NUMBER) : defaultVersion
+        println code == defaultVersion ? "BUILD_NUMBER not found. Falling back to default version code: $defaultVersion" : "VersionCode is set to $code"
+        return code
+    }
 }
